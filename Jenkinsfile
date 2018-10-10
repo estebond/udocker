@@ -77,6 +77,23 @@ commands = bandit udocker -f html -o bandit.html"""
             }
         }
 
+        stage('Dependency check') {
+            agent {
+                label 'docker-build'
+            }
+            steps {
+                checkout scm
+                OWASPDependencyCheckRun("$WORKSPACE/udocker", project="udocker")
+            }
+            post {
+                always {
+                    OWASPDependencyCheckPublish()
+                    HTMLReport('udocker', 'dependency-check-report.html', 'OWASP Dependency Report')
+                    deleteDir()
+                }
+            }
+        }
+
         stage('Metrics gathering') {
             agent {
                 label 'sloc'
@@ -89,6 +106,24 @@ commands = bandit udocker -f html -o bandit.html"""
                 success {
                     SLOCPublish()
                 }
+            }
+        }
+
+        stage('Notifications') {
+            when {
+                buildingTag()
+            }
+	    steps {
+                JiraIssueNotification(
+                    'DEEP',
+                    'DPM',
+                    '10204',
+                    "[preview-testbed] New udocker version ${env.BRANCH_NAME} available",
+                    '',
+                    ['wp3', 'preview-testbed', "udocker-${env.BRANCH_NAME}"],
+		    'Task',
+		    'mariojmdavid'
+                )
             }
         }
     }
