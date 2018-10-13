@@ -1911,6 +1911,7 @@ class ExecutionEngineCommon(object):
     def _check_volumes(self):
         """Check volume paths"""
         for vol in list(self.opt["vol"]):
+            vol = vol.replace(':{}','')
             if ":" in vol:
                 (host_path, cont_path) = vol.split(":")
                 self._create_mountpoint(host_path, cont_path)
